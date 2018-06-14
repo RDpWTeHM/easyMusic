@@ -55,6 +55,7 @@ def getHTMLText( URL, Params=None, Head=None, Timeout=30):
 
 def getPlayList(userID):
 	kv = {'id':userID}
+	browsersKV = {'User-Agent':'Mozilla/5.0  (Windows NT 10.0; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0'}
 	htmlData = getHTMLText("https://music.163.com/#/user/home", Params=kv, Head=browsersKV)
 	# print(htmlData)
 
@@ -76,6 +77,38 @@ def getPlayList(userID):
 	### 分析歌单 URL， 用于下面get playlist的 id！
 #fed
 
+def Is_chinese(uchar):
+	""" 判断一个unicode 是否是汉字"""
+	if uchar >= u'\u4e00' and uchar<=u'\u9fa5':
+		return True
+	else:
+		return False
+
+def myAlign(string, length=0):
+	if length==0:
+		return string
+
+	slen = len(string)
+	CN_counter = 0
+	for u in string:
+		if Is_chinese(u):
+			CN_counter += 2
+		else:
+			CN_counter += 1
+	slen = CN_counter
+
+	re = string
+	if isinstance(string, str):
+		placeholder = ' '
+	else:
+		placeholder = u' '
+
+	while slen<length:
+		re += placeholder
+		slen += 1
+	return re
+
+
 
 ###
 ### running logical
@@ -89,23 +122,75 @@ def main():
 		sys.exit(1)
 
 	# getPlayList(sys.argv[1])
+	while True:
+		songListID = input("Enter your song List id(which can be found on url)(Enter q to quit): ")
+		if songListID=='q':
+			sys.exit(0)
+		# print(songListID)
+		songlistKV={'id':songListID}
+		html_songListData = getHTMLText("https://music.163.com/playlist", Params=songlistKV, Head=browsersKV)
+		# print(htmlData[10000:16000])
 
-	songListID = input("Enter your song List id(which can be found on url): ")
-	# print(songListID)
-	songlistKV={'id':songListID}
-	html_songListData = getHTMLText("https://music.163.com/playlist", Params=songlistKV, Head=browsersKV)
-	# print(htmlData[10000:16000])
+		bshtml = BeautifulSoup(html_songListData, "html.parser")
+		bsSongtb = bshtml.findAll("ul", {"class":"f-hide"})
+		## bsSongtb is "SET" type of bs4
 
-	bshtml = BeautifulSoup(html_songListData, "html.parser")
-	bsSongtb = bshtml.findAll("ul", {"class":"f-hide"})
-	## bsSongtb is "SET" type of bs4
+		bsSongList = bsSongtb[0]
+		## bsSongList is "LIST" type of bs4
 
-	bsSongList = bsSongtb[0]
-	## bsSongList is "LIST" type of bs4
+		songList = list()
+		for song in bsSongList.findAll("li"):
+			songList.append( song.get_text() )
 
-	for song in bsSongList.findAll("li"):
-		print(song.get_text())
+		songPrtLaterList = list()
+		i=0
+		tplt = "{0:^16}"
+		for song in songList:
+			CN_counter = 0
+			for u in song:
+				if Is_chinese(u):
+					CN_counter += 2
+				else:
+					CN_counter += 1
+			slen = CN_counter
+			# if len(song)>16:
+			if slen>18:
+				songPrtLaterList.append(song)
+				continue
 
+			if i%4==0:
+				print("")
+			# print('{0:{1}<10}'.format(song,chr(12288)),  end="")
+			#print(song.ljust(15," "),  end="")
+			print( myAlign(song, 20), end="" )
+			i=1+i
+		print("")
+
+		songList_v2 = list()
+		for song in songPrtLaterList:
+			CN_counter = 0
+			for u in song:
+				if Is_chinese(u):
+					CN_counter += 2
+				else:
+					CN_counter += 1
+			slen = CN_counter
+			# if len(song)>16:
+			if slen>37:
+				songList_v2.append(song)
+				continue
+
+			if i%2==0:
+				print("")
+			# print('{0:{1}<10}'.format(song,chr(12288)),  end="")
+			#print(song.ljust(15," "),  end="")
+			print( myAlign(song, 40), end="" )
+			i=1+i
+		print("")
+
+		for song in songList_v2:
+			print(song)
+		print("%s\n" %(80*'='))
 #fed.
 
 if __name__ == "__main__":
