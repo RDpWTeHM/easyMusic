@@ -9,6 +9,11 @@
 ### v0.0.1  
 ### change log: N/A
 ###
+### ------ 2018/Jun/15 11:01  ------
+### v0.0.4
+### author    : Joseph Lin
+### change log: 添加处理 JSON format of playlist data.
+###
 ### ------
 ###
 """
@@ -25,6 +30,9 @@ import spiderutils
 import requests
 
 from bs4 import BeautifulSoup
+
+import json
+
 
 ###
 ### Global variables
@@ -240,7 +248,14 @@ class USER_ID:
 		"""
 			通过POST 方法获取到 response 过来的 JSON 数据
 		"""
-		return None
+		try:
+			with open('PlayList.json') as f_PlayListJSON:
+				playListJSON = f_PlayListJSON.read()
+		except IOError as e:
+			print("IO ERROR: " + str(e))
+			sys.exit(215)
+		
+		return playListJSON
 
 	def getPlayListUrlKVSet(self):
 		"""
@@ -248,14 +263,36 @@ class USER_ID:
 			https://music.163.com/playlist?id=13630786
 			{'id':'13630786', 'id':'588662883'}
 		"""
-		playlistJSON = self.getPlayListJSON()
+		playListJSON = self.getPlayListJSON()
+		if USER_ID_doDebug:
+			if playListJSON.find("小白兔"):
+				USERIDDBG("\n@@@@@  GET JSON data success! @@@@@")
+			else:
+				USERIDDBG("\n------Get JSON data Faile!----")
 
-		self.songListUrlKV_DIC = dict()
-		self.songListUrlKV_DIC['FuCK_-喜欢的音乐'] = '13630786'
-		self.songListUrlKV_DIC['躁动'] = '588662883'
-		self.songListUrlKV_DIC['小白兔']    = '588661766'
-		self.songListUrlKV_DIC['我的跑步歌单2016-10-10(21:43-22:18)']     = '483348448'  
-		self.songListUrlKV_DIC['DJsoda黄素熙']     = '454817569'  
+		## 使用 JSON 库将其转化为 dict 
+		playListJSON = json.loads(playListJSON)
+		## type(playListJSON) == dict
+		tmp_playList = playListJSON['playlist']
+		## type(tmp_playList) == LIST
+		## type(tmp_playList[X]) == dict
+
+		tmp_DIC = dict()
+		for eachPlayList in tmp_playList:
+			tmp_DIC[eachPlayList['name']] = eachPlayList['id']
+
+		if USERIDDBG:
+			USERIDDBG(tmp_DIC)
+		##########
+		self.songListUrlKV_DIC = tmp_DIC
+		
+		#### -[o]joseph, delete fallow later:
+		if USER_ID_doDebug:
+			print(type(self.songListUrlKV_DIC))
+			print(str(len(self.songListUrlKV_DIC)))
+			print("")
+			for i in range(len(self.songListUrlKV_DIC)):
+				print("{:<4d}{}:{}".format(i,list(self.songListUrlKV_DIC.keys())[i],list(self.songListUrlKV_DIC.values())[i]))
 
 		return self.songListUrlKV_DIC
 
@@ -313,6 +350,8 @@ def main():
 
 	while(True):
 		selectPlayList = input("Enter play list name which you want to get song list: ")
+		if selectPlayList=='q':
+			sys.exit(0)
 		if selectPlayList in user.songListUrlKV_DIC:
 			"""
 				在 code 里面的写的 “中文” 和 在终端输入的“中文”， 
