@@ -32,7 +32,15 @@ from bs4 import BeautifulSoup
 doDebug = False
 
 browsersKV = {'User-Agent':'Mozilla/5.0  (Windows NT 10.0; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0'}
+g_urlKV    = {'id':''}
 
+g_payload  = {'params':''}
+
+"""
+	注意， .com/#/... 实际上不是这个样子的链接请求！
+	这个是浏览器运行 js 后，显示出来的样子。
+"""
+g_url_common = "https://music.163.com/#/user/home"
 
 ###
 ### function define
@@ -77,6 +85,9 @@ def getPlayList(userID):
 	### 分析歌单 URL， 用于下面get playlist的 id！
 #fed
 
+
+###
+#### language of song's name. 
 def Is_chinese(uchar):
 	""" 判断一个unicode 是否是汉字"""
 	if uchar >= u'\u4e00' and uchar<=u'\u9fa5':
@@ -109,11 +120,217 @@ def myAlign(string, length=0):
 	return re
 
 
+def PringSongList_format(songList):
+	songPrtLaterList = list()
+	i=0
+	tplt = "{0:^16}"
+	for song in songList:
+		CN_counter = 0
+		for u in song:
+			if Is_chinese(u):
+				CN_counter += 2
+			else:
+				CN_counter += 1
+		slen = CN_counter
+		# if len(song)>16:
+		if slen>18:
+			songPrtLaterList.append(song)
+			continue
+
+		if i%4==0:
+			print("")
+		# print('{0:{1}<10}'.format(song,chr(12288)),  end="")
+		#print(song.ljust(15," "),  end="")
+		print( myAlign(song, 20), end="" )
+		i=1+i
+	print("")
+
+	songList_v2 = list()
+	for song in songPrtLaterList:
+		CN_counter = 0
+		for u in song:
+			if Is_chinese(u):
+				CN_counter += 2
+			else:
+				CN_counter += 1
+		slen = CN_counter
+		# if len(song)>16:
+		if slen>37:
+			songList_v2.append(song)
+			continue
+
+		if i%2==0:
+			print("")
+		# print('{0:{1}<10}'.format(song,chr(12288)),  end="")
+		#print(song.ljust(15," "),  end="")
+		print( myAlign(song, 40), end="" )
+		i=1+i
+	print("")
+
+	for song in songList_v2:
+		print(song)
+	print("%s\n" %(80*'='))
+
+
+USER_ID_doDebug = True
+def USERIDDBG(_str):
+	print(_str)
+class USER_ID:
+	"""docstring for USER_ID"""
+	def __init__(self, ID=0):
+		# super(USER, self).__init__() ## ????
+		self.ID = ID
+
+		self.userFrameUrl = "https://music.163.com/user/home" 
+		self.userFrameUrlKV = None
+		self.userFrameHTMLData = None
+
+		self.songListUrl = "https://music.163.com/playlist"
+		self.songListUrlKV_DIC = None
+		self.songListUrlPayload_SET = None
+	
+	def getUserID():
+		return self.ID
+
+	def setUserID(ID):
+		self.ID = ID
+		if USER_ID_doDebug:
+			USERIDDBG("USER ID: "+str(ID))
+
+	def printClassAll(self):
+		print("\n======  class variables trace:  ============= ")
+		print(self.ID)
+
+		print(self.userFrameUrl)
+		print(self.userFrameUrlKV)
+		#print(self.userFrameHTMLData)
+		
+		print(self.songListUrl)
+		print(self.songListUrlKV_DIC)
+		print(self.songListUrlPayload_SET)
+		print("%s" %(30*'='))
+
+	def private_generateUserFrameHTMLurl(self):
+		self.userFrameUrlKV = {'id':self.ID}
+	def getUserFrameHTMLurlKV(self):
+		self.private_generateUserFrameHTMLurl()
+		return self.userFrameUrlKV
+
+	def getUserFrameHTMLData(self):
+		self.userFrameHTMLData = getHTMLText(self.userFrameUrl, 
+											Params=self.getUserFrameHTMLurlKV(), 
+											Head=browsersKV)
+		return self.userFrameHTMLData
+
+	"""
+		.com/#/...                             
+		通用首页HTML代码 ----GET---->        用户首页      --POST-->      用户playList 数据（JSON）
+		             .com/home?id=<USER-ID>           .com/playlist?...          
+												       + formdata
+	"""
+	def private_GeneratePlayListKVSET(self):
+		"""
+			大概是生成 HASH 去对应 USER 的 iframe 请求
+			POST + formdata => 获得 JOSN 格式的数据！
+			-[o] 找到 JavaScript 解析 JOSN 数据的位置
+		"""
+		pass
+
+	def getPlayListJSON(self):
+		"""
+			通过POST 方法获取到 response 过来的 JSON 数据
+		"""
+		return None
+
+	def getPlayListUrlKVSet(self):
+		"""
+			通过 JSON 数据分析出来 即将请求 songList 的 ParamsKV
+			https://music.163.com/playlist?id=13630786
+			{'id':'13630786', 'id':'588662883'}
+		"""
+		playlistJSON = self.getPlayListJSON()
+
+		self.songListUrlKV_DIC = dict()
+		self.songListUrlKV_DIC['FuCK_-喜欢的音乐'] = '13630786'
+		self.songListUrlKV_DIC['躁动'] = '588662883'
+		self.songListUrlKV_DIC['小白兔']    = '588661766'
+		self.songListUrlKV_DIC['我的跑步歌单2016-10-10(21:43-22:18)']     = '483348448'  
+		self.songListUrlKV_DIC['DJsoda黄素熙']     = '454817569'  
+
+		return self.songListUrlKV_DIC
+
+	def getSongList(self, selectPlayList):
+		if selectPlayList in self.songListUrlKV_DIC:
+			pass
+		else:
+			return None
+
+		IDofSongList = self.songListUrlKV_DIC[selectPlayList]
+		if USER_ID_doDebug:
+			USERIDDBG(IDofSongList)
+
+		requestKV = {'id':IDofSongList}
+		html_songListData = getHTMLText(self.songListUrl, Params=requestKV, Head=browsersKV)
+		
+		bshtml = BeautifulSoup(html_songListData, "html.parser")
+		bsSongtb = bshtml.findAll("ul", {"class":"f-hide"})
+		## bsSongtb is "SET" type of bs4
+
+		bsSongList = bsSongtb[0]
+		## bsSongList is "LIST" type of bs4
+
+		songList = list()
+		for song in bsSongList.findAll("li"):
+			songList.append( song.get_text() )
+
+		return songList
+
 
 ###
 ### running logical
 ###
 def main():
+	argc = len(sys.argv)
+	ID = 0
+	if argc !=2:
+		ID = input("Enter your USER ID of Music.163.com: ") 
+	else:
+		ID = sys.argv[1]
+
+	user = USER_ID(ID)
+	user.printClassAll()
+
+	## fake request
+	# getHTMLText(g_url_common, Params=user.userFrameUrlKV, Head=browsersKV)
+	## real request
+	htmlData = user.getUserFrameHTMLData()
+	
+	#print(htmlData)
+	# print(htmlData[(htmlData.find(u"喜欢的音乐")-20):(htmlData.find(u"纯音乐")+200)])
+
+	user.getPlayListUrlKVSet()
+	user.printClassAll()
+
+	while(True):
+		selectPlayList = input("Enter play list name which you want to get song list: ")
+		if selectPlayList in user.songListUrlKV_DIC:
+			"""
+				在 code 里面的写的 “中文” 和 在终端输入的“中文”， 
+				是可以直接相等比较的！
+			"""
+			print('[Debug:] right value!')
+		else:
+			print('[Debug:] wrong value!')
+			selectPlayList = input("Try again: ")
+			continue
+		
+		# print(user.getSongList(selectPlayList))
+		songList = user.getSongList(selectPlayList)
+		PringSongList_format(songList)
+
+
+
+def old_main():
 	argc = len(sys.argv)
 	if argc!=2:
 		print( "usage: $ %s <your userID>" %sys.argv[0], file=sys.stderr)
@@ -192,6 +409,7 @@ def main():
 			print(song)
 		print("%s\n" %(80*'='))
 #fed.
+
 
 if __name__ == "__main__":
 	main()
