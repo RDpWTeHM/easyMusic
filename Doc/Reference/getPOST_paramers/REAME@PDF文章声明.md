@@ -8,6 +8,8 @@
 
 > sergiojune 发表于 日常学python
 
+本目录下的 pdf 仅作为方便打开和学习参考使用目的而保存。
+
 **如果本 pdf 分享有任何问题，请联系 joseph.lin@aliyun.com 说明。**
 
 
