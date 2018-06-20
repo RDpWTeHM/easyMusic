@@ -195,7 +195,7 @@ class USER_ID:
 
 		self.songListUrl = "https://music.163.com/playlist"
 		self.songListUrlKV_DIC = None
-		self.songListUrlPayload_SET = None
+		self.songListUrlPayload_DIC = None
 	
 	def getUserID():
 		return self.ID
@@ -215,7 +215,7 @@ class USER_ID:
 		
 		print(self.songListUrl)
 		print(self.songListUrlKV_DIC)
-		print(self.songListUrlPayload_SET)
+		print(self.songListUrlPayload_DIC)
 		print("%s" %(30*'='))
 
 	def private_generateUserFrameHTMLurl(self):
